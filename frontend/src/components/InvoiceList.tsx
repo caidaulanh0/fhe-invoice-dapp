@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { ethers } from 'ethers';
 import { useContract, Invoice } from '../hooks/useContract';
-import { useFhevm, CONTRACT_ADDRESS } from '../hooks/useFhevm';
 
 interface InvoiceListProps {
   account: string;
@@ -11,10 +11,8 @@ interface InvoiceListProps {
 const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
   const { getSentInvoices, getReceivedInvoices, getInvoice, payInvoice, cancelInvoice, disputeInvoice, isLoading } =
     useContract();
-  const { decryptAmount, isInitialized } = useFhevm();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
-  const [decryptingId, setDecryptingId] = useState<bigint | null>(null);
 
   const loadInvoices = useCallback(async () => {
     setIsLoadingList(true);
@@ -40,31 +38,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices]);
-
-  const handleDecrypt = async (invoice: Invoice) => {
-    if (!isInitialized || !CONTRACT_ADDRESS) {
-      toast.error('FHE not initialized');
-      return;
-    }
-
-    setDecryptingId(invoice.id);
-    try {
-      toast.loading('Decrypting amount...', { id: 'decrypt' });
-      const decrypted = await decryptAmount(invoice.encryptedAmount!, CONTRACT_ADDRESS);
-
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.id === invoice.id ? { ...inv, decryptedAmount: decrypted } : inv
-        )
-      );
-      toast.success('Amount decrypted!', { id: 'decrypt' });
-    } catch (error: any) {
-      console.error('Decryption failed:', error);
-      toast.error('Failed to decrypt amount', { id: 'decrypt' });
-    } finally {
-      setDecryptingId(null);
-    }
-  };
 
   const handlePay = async (invoiceId: bigint) => {
     const success = await payInvoice(invoiceId);
@@ -110,7 +83,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
   };
 
   const formatAmount = (amount: bigint) => {
-    return (Number(amount) / 1e18).toFixed(6);
+    return ethers.formatEther(amount);
   };
 
   if (isLoadingList) {
@@ -197,38 +170,9 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
                   <p className="text-gray-600">{invoice.description}</p>
                 </div>
                 <div className="text-right">
-                  {invoice.decryptedAmount !== undefined ? (
-                    <p className="text-xl font-bold text-gray-900">
-                      {formatAmount(invoice.decryptedAmount)} ZAMA
-                    </p>
-                  ) : (
-                    <button
-                      onClick={() => handleDecrypt(invoice)}
-                      disabled={decryptingId === invoice.id}
-                      className="text-fhe-purple hover:text-fhe-blue transition-colors text-sm font-medium flex items-center space-x-1"
-                    >
-                      {decryptingId === invoice.id ? (
-                        <span className="animate-pulse">Decrypting...</span>
-                      ) : (
-                        <>
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <span>Decrypt Amount</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatAmount(invoice.amount)} ETH
+                  </p>
                 </div>
               </div>
 

@@ -3,36 +3,31 @@ import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { CONTRACT_ADDRESS } from './useFhevm';
 
-// ConfidentialInvoice ABI - using proper FHE with externalEuint64
-const CONFIDENTIAL_INVOICE_ABI = [
-  'function depositBalance(bytes32 encryptedAmount, bytes calldata inputProof) external',
-  'function createInvoice(address recipient, bytes32 encryptedAmount, bytes calldata inputProof, string calldata description, uint256 dueDate) external returns (uint256)',
+// SimpleInvoice ABI - no FHE encryption needed
+const SIMPLE_INVOICE_ABI = [
+  'function createInvoice(address recipient, uint256 amount, string calldata description, uint256 dueDate) external returns (uint256)',
   'function payInvoice(uint256 invoiceId) external',
   'function cancelInvoice(uint256 invoiceId) external',
   'function disputeInvoice(uint256 invoiceId) external',
-  'function getInvoice(uint256 invoiceId) external view returns (uint256 id, address sender, address recipient, string memory description, uint8 status, uint256 createdAt, uint256 dueDate)',
-  'function getEncryptedBalance(address user) external view returns (bytes32)',
-  'function getEncryptedAmount(uint256 invoiceId) external view returns (bytes32)',
+  'function getInvoice(uint256 invoiceId) external view returns (uint256 id, address sender, address recipient, uint256 amount, string memory description, uint8 status, uint256 createdAt, uint256 dueDate)',
   'function getSentInvoices(address user) external view returns (uint256[])',
   'function getReceivedInvoices(address user) external view returns (uint256[])',
   'function getInvoiceCount() external view returns (uint256)',
-  'event InvoiceCreated(uint256 indexed invoiceId, address indexed sender, address indexed recipient, string description, uint256 dueDate)',
+  'event InvoiceCreated(uint256 indexed invoiceId, address indexed sender, address indexed recipient, uint256 amount, string description, uint256 dueDate)',
   'event InvoicePaid(uint256 indexed invoiceId, address indexed payer)',
   'event InvoiceCancelled(uint256 indexed invoiceId)',
   'event InvoiceDisputed(uint256 indexed invoiceId)',
-  'event BalanceDeposited(address indexed user)',
 ];
 
 export interface Invoice {
   id: bigint;
   sender: string;
   recipient: string;
+  amount: bigint;
   description: string;
   status: number;
   createdAt: bigint;
   dueDate: bigint;
-  encryptedAmount?: string;
-  decryptedAmount?: bigint;
 }
 
 export function useContract() {
@@ -48,7 +43,7 @@ export function useContract() {
         const signer = await provider.getSigner();
         const invoiceContract = new ethers.Contract(
           CONTRACT_ADDRESS,
-          CONFIDENTIAL_INVOICE_ABI,
+          SIMPLE_INVOICE_ABI,
           signer
         );
         setContract(invoiceContract);
@@ -60,36 +55,10 @@ export function useContract() {
     initContract();
   }, []);
 
-  const depositBalance = useCallback(
-    async (encryptedAmount: string, inputProof: string) => {
-      if (!contract) {
-        toast.error('Contract not initialized');
-        return false;
-      }
-
-      setIsLoading(true);
-      try {
-        const tx = await contract.depositBalance(encryptedAmount, inputProof);
-        toast.loading('Depositing balance...', { id: 'deposit' });
-        await tx.wait();
-        toast.success('Balance deposited!', { id: 'deposit' });
-        return true;
-      } catch (error: any) {
-        console.error('Deposit error:', error);
-        toast.error(error.reason || 'Failed to deposit', { id: 'deposit' });
-        return false;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [contract]
-  );
-
   const createInvoice = useCallback(
     async (
       recipient: string,
-      encryptedAmount: string,
-      inputProof: string,
+      amount: bigint,
       description: string,
       dueDate?: number
     ) => {
@@ -100,19 +69,17 @@ export function useContract() {
 
       setIsLoading(true);
       try {
-        // Default due date to 30 days from now if not provided
-        const dueDateTimestamp = dueDate || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+        const dueDateTimestamp = dueDate || 0; // 0 means contract will use default 30 days
 
         const tx = await contract.createInvoice(
           recipient,
-          encryptedAmount,
-          inputProof,
+          amount,
           description,
           dueDateTimestamp
         );
-        toast.loading('Creating encrypted invoice...', { id: 'create-invoice' });
+        toast.loading('Creating invoice...', { id: 'create-invoice' });
         const receipt = await tx.wait();
-        toast.success('Invoice created with FHE encryption!', { id: 'create-invoice' });
+        toast.success('Invoice created!', { id: 'create-invoice' });
 
         // Parse invoice ID from event
         const event = receipt.logs.find(
@@ -140,9 +107,9 @@ export function useContract() {
       setIsLoading(true);
       try {
         const tx = await contract.payInvoice(invoiceId);
-        toast.loading('Processing encrypted payment...', { id: 'pay-invoice' });
+        toast.loading('Processing payment...', { id: 'pay-invoice' });
         await tx.wait();
-        toast.success('Invoice paid using FHE!', { id: 'pay-invoice' });
+        toast.success('Invoice paid!', { id: 'pay-invoice' });
         return true;
       } catch (error: any) {
         console.error('Pay invoice error:', error);
@@ -212,13 +179,14 @@ export function useContract() {
       try {
         const result = await contract.getInvoice(invoiceId);
         return {
-          id: result.id,
-          sender: result.sender,
-          recipient: result.recipient,
-          description: result.description,
-          status: result.status,
-          createdAt: result.createdAt,
-          dueDate: result.dueDate,
+          id: result[0],
+          sender: result[1],
+          recipient: result[2],
+          amount: result[3],
+          description: result[4],
+          status: Number(result[5]),
+          createdAt: result[6],
+          dueDate: result[7],
         };
       } catch (error) {
         console.error('Get invoice error:', error);
@@ -270,7 +238,6 @@ export function useContract() {
   return {
     contract,
     isLoading,
-    depositBalance,
     createInvoice,
     payInvoice,
     cancelInvoice,
