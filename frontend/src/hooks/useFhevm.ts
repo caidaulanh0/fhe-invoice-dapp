@@ -4,8 +4,8 @@ import { ethers } from 'ethers';
 // Contract configuration
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
 
-// Zama fhEVM chain configuration
-const ZAMA_CHAIN_ID = 8009;
+// Sepolia chain configuration for fhEVM
+const SEPOLIA_CHAIN_ID = 11155111;
 
 // Demo mode flag - set to true for demo without actual FHE
 const DEMO_MODE = !CONTRACT_ADDRESS;
@@ -37,13 +37,13 @@ export function useFhevm() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
 
-      if (Number(network.chainId) !== ZAMA_CHAIN_ID) {
-        console.warn('Not on Zama network, FHE features may not work');
+      if (Number(network.chainId) !== SEPOLIA_CHAIN_ID) {
+        console.warn('Not on Sepolia network, FHE features may not work');
       }
 
       // Initialize fhEVM instance
       const instance = await createFhevmInstance({
-        chainId: ZAMA_CHAIN_ID,
+        chainId: SEPOLIA_CHAIN_ID,
       });
 
       setFhevmInstance(instance);

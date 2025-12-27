@@ -1,17 +1,16 @@
 // Network Configuration
-export const ZAMA_CHAIN_ID = 8009;
 export const SEPOLIA_CHAIN_ID = 11155111;
 
-export const ZAMA_NETWORK = {
-  chainId: `0x${ZAMA_CHAIN_ID.toString(16)}`,
-  chainName: 'Zama Ethereum',
+export const SEPOLIA_NETWORK = {
+  chainId: `0x${SEPOLIA_CHAIN_ID.toString(16)}`,
+  chainName: 'Sepolia Testnet',
   nativeCurrency: {
-    name: 'ZAMA',
-    symbol: 'ZAMA',
+    name: 'SepoliaETH',
+    symbol: 'ETH',
     decimals: 18,
   },
-  rpcUrls: ['https://ethnode1.zama.fhe.io'],
-  blockExplorerUrls: ['https://explorer.zama.ai'],
+  rpcUrls: ['https://sepolia.infura.io/v3/'],
+  blockExplorerUrls: ['https://sepolia.etherscan.io'],
 };
 
 // Contract addresses - Update after deployment

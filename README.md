@@ -89,10 +89,10 @@ cd contracts
 npm run compile
 ```
 
-### 4. Deploy to Zama Network
+### 4. Deploy to Sepolia Network
 
 ```bash
-npm run deploy:zama
+npm run deploy:sepolia
 ```
 
 ### 5. Run Frontend
@@ -104,15 +104,14 @@ npm run dev
 
 ## Network Configuration
 
-### Zama Ethereum Network
-- **Chain ID**: 8009
-- **RPC URL**: https://ethnode1.zama.fhe.io
-- **Explorer**: https://explorer.zama.ai
+### Sepolia Testnet
+- **Chain ID**: 11155111
+- **RPC URL**: https://sepolia.infura.io/v3/YOUR_INFURA_KEY
+- **Explorer**: https://sepolia.etherscan.io
 
-Add to MetaMask:
-1. Open MetaMask
-2. Add Network manually
-3. Enter the configuration above
+Get Sepolia ETH from faucets:
+- https://sepoliafaucet.com
+- https://www.alchemy.com/faucets/ethereum-sepolia
 
 ## Smart Contract
 

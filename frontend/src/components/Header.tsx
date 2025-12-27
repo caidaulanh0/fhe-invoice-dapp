@@ -22,8 +22,8 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const getNetworkName = (id: number | null) => {
-    if (id === 8009) return 'Zama';
     if (id === 11155111) return 'Sepolia';
+    if (id === 1) return 'Mainnet';
     return 'Unknown';
   };
 
@@ -69,7 +69,7 @@ const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center space-x-2">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    chainId === 8009 ? 'bg-green-500' : 'bg-yellow-500'
+                    chainId === 11155111 ? 'bg-green-500' : 'bg-yellow-500'
                   }`}
                 />
                 <span className="text-sm text-gray-600">{getNetworkName(chainId)}</span>
