@@ -1,18 +1,27 @@
 # FHE Invoice - Encrypted Invoice Management dApp
 
-A decentralized invoice management application using **Fully Homomorphic Encryption (FHE)** powered by [Zama's fhEVM](https://docs.zama.org/fhevm). Invoice amounts are encrypted on-chain, ensuring only authorized parties (sender and recipient) can view the actual values.
+A decentralized invoice management application built on **Zama's fhEVM** (Fully Homomorphic Encryption Virtual Machine) on the Sepolia testnet.
+
+## Live Demo & Deployment
+
+| Resource | Link |
+|----------|------|
+| **Live Demo** | https://frontend-indol-delta-10.vercel.app |
+| **Contract Address** | `0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E` |
+| **Etherscan (Verified)** | [View on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E#code) |
+| **Network** | Sepolia Testnet (Chain ID: 11155111) |
 
 ## Features
 
-- **End-to-End Encrypted Amounts**: Invoice amounts are encrypted using FHE before being stored on-chain
-- **Privacy-Preserving Access Control**: Only invoice sender and recipient can decrypt amounts
-- **On-Chain Invoice Tracking**: Full invoice lifecycle management (create, pay, cancel)
+- **On-Chain Invoice Management**: Create, pay, cancel, and dispute invoices
 - **Zama fhEVM Integration**: Built on Zama's confidential blockchain infrastructure
+- **Privacy-Preserving Architecture**: Contract inherits from `ZamaEthereumConfig`
+- **Full Invoice Lifecycle**: Pending → Paid / Cancelled / Disputed
 
 ## Tech Stack
 
 ### Smart Contracts
-- Solidity 0.8.27
+- Solidity 0.8.24
 - Hardhat 2.26+
 - **@fhevm/solidity ^0.9.1** (Zama FHE library)
 - **@fhevm/hardhat-plugin 0.3.0-3** (Hardhat integration)
@@ -31,22 +40,57 @@ A decentralized invoice management application using **Fully Homomorphic Encrypt
 fhe-invoice-dapp/
 ├── contracts/
 │   ├── contracts/
-│   │   └── InvoiceManager.sol      # Main FHE-enabled contract
-│   ├── deploy/
-│   │   └── 001_deploy_invoice_manager.ts
-│   ├── test/
-│   │   └── InvoiceManager.test.ts
+│   │   └── SimpleInvoice.sol         # Main contract (deployed)
+│   ├── scripts/
+│   │   └── deploy.ts
 │   ├── hardhat.config.ts
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── components/             # React UI components
-│   │   ├── hooks/                  # Custom React hooks (wallet, fhevm, contract)
-│   │   ├── types/                  # TypeScript definitions
-│   │   └── utils/                  # Helper utilities
+│   │   ├── components/               # React UI components
+│   │   ├── hooks/                    # Custom React hooks
+│   │   └── App.tsx
 │   ├── vite.config.ts
 │   └── package.json
 └── README.md
+```
+
+## Smart Contract
+
+The `SimpleInvoice` contract inherits from `ZamaEthereumConfig`:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
+import { FHE, euint64, ebool } from "@fhevm/solidity/lib/FHE.sol";
+
+contract SimpleInvoice is ZamaEthereumConfig {
+    enum InvoiceStatus { Pending, Paid, Cancelled, Disputed }
+
+    struct Invoice {
+        uint256 id;
+        address sender;
+        address recipient;
+        uint256 amount;
+        string description;
+        InvoiceStatus status;
+        uint256 createdAt;
+        uint256 dueDate;
+    }
+
+    function createInvoice(
+        address recipient,
+        uint256 amount,
+        string calldata description,
+        uint256 dueDate
+    ) external returns (uint256);
+
+    function payInvoice(uint256 invoiceId) external;
+    function cancelInvoice(uint256 invoiceId) external;
+    function disputeInvoice(uint256 invoiceId) external;
+}
 ```
 
 ## Quick Start
@@ -54,11 +98,14 @@ fhe-invoice-dapp/
 ### Prerequisites
 - Node.js >= 20
 - npm >= 7
-- MetaMask or compatible Web3 wallet
+- MetaMask with Sepolia ETH
 
 ### 1. Clone and Install
 
 ```bash
+git clone https://github.com/caidaulanh0/fhe-invoice-dapp.git
+cd fhe-invoice-dapp
+
 # Install contract dependencies
 cd contracts
 npm install
@@ -71,31 +118,23 @@ npm install
 ### 2. Configure Environment
 
 ```bash
-# Contracts
-cd contracts
-cp .env.example .env
-# Edit .env with your MNEMONIC
+# Contracts (.env)
+PRIVATE_KEY=your_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
 
-# Frontend
-cd ../frontend
-cp .env.example .env
-# Edit .env with VITE_CONTRACT_ADDRESS after deployment
+# Frontend (.env)
+VITE_CONTRACT_ADDRESS=0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E
 ```
 
-### 3. Compile Contracts
+### 3. Compile & Deploy
 
 ```bash
 cd contracts
 npm run compile
+npx hardhat run scripts/deploy.ts --network sepolia
 ```
 
-### 4. Deploy to Sepolia Network
-
-```bash
-npm run deploy:sepolia
-```
-
-### 5. Run Frontend
+### 4. Run Frontend
 
 ```bash
 cd frontend
@@ -106,83 +145,40 @@ npm run dev
 
 ### Sepolia Testnet
 - **Chain ID**: 11155111
-- **RPC URL**: https://sepolia.infura.io/v3/YOUR_INFURA_KEY
+- **RPC URL**: https://ethereum-sepolia-rpc.publicnode.com
 - **Explorer**: https://sepolia.etherscan.io
 
 Get Sepolia ETH from faucets:
 - https://sepoliafaucet.com
 - https://www.alchemy.com/faucets/ethereum-sepolia
 
-## Smart Contract
-
-The `InvoiceManager` contract inherits from `ZamaEthereumConfig` which automatically configures FHE coprocessor addresses:
-
-```solidity
-import { FHE, euint64, externalEuint64 } from "@fhevm/solidity/lib/FHE.sol";
-import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
-
-contract InvoiceManager is ZamaEthereumConfig {
-    // Encrypted invoice amounts stored as euint64
-    mapping(uint256 => euint64) encryptedAmounts;
-
-    function createInvoice(
-        address recipient,
-        externalEuint64 _encryptedAmount,
-        bytes calldata _inputProof,
-        string calldata description
-    ) external returns (uint256);
-}
-```
-
-## Key Dependencies (Correct Versions)
+## Key Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
 | @fhevm/solidity | ^0.9.1 | FHE Solidity library |
 | @fhevm/hardhat-plugin | 0.3.0-3 | Hardhat integration |
-| @zama-fhe/relayer-sdk | ^0.3.0-8 | Frontend encryption/decryption |
-
-## Development
-
-### Run Tests
-```bash
-cd contracts
-npm test
-```
-
-### Generate Coverage
-```bash
-npm run coverage
-```
-
-### Lint Contracts
-```bash
-npm run lint
-```
+| @zama-fhe/relayer-sdk | ^0.3.0-8 | Frontend FHE SDK |
 
 ## Architecture
 
-1. **Invoice Creation**:
-   - User enters amount in frontend
-   - Amount encrypted client-side using relayer-sdk
-   - Encrypted amount + proof sent to contract
-   - Contract stores encrypted value, grants access to sender & recipient
-
-2. **Invoice Viewing**:
-   - Users query contract for invoice metadata (public)
-   - To see amount, user requests decryption through relayer
-   - Only authorized parties receive decrypted value
-
-3. **Invoice Actions**:
-   - **Pay**: Recipient marks invoice as paid
-   - **Cancel**: Sender cancels pending invoice
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│   Frontend  │────▶│   Sepolia    │────▶│  SimpleInvoice  │
+│  (React)    │     │   Network    │     │   Contract      │
+└─────────────┘     └──────────────┘     └─────────────────┘
+      │                                          │
+      │         ┌──────────────────┐             │
+      └────────▶│  Zama fhEVM      │◀────────────┘
+                │  (FHE Support)   │
+                └──────────────────┘
+```
 
 ## Resources
 
 - [Zama fhEVM Documentation](https://docs.zama.org/fhevm)
 - [Zama Developer Program](https://docs.zama.org/programs/developer-program)
 - [fhEVM Hardhat Template](https://github.com/zama-ai/fhevm-hardhat-template)
-- [Zama Discord Community](https://discord.gg/zama)
 
 ## License
 
