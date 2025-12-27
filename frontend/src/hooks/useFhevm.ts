@@ -1,11 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ethers } from 'ethers';
 
 // Contract configuration
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
-
-// Sepolia chain configuration for fhEVM
-const SEPOLIA_CHAIN_ID = 11155111;
 
 // Global instance to avoid re-initialization
 let globalFhevmInstance: any = null;
@@ -35,33 +31,22 @@ export function useFhevm() {
     // Start initialization
     initPromise = (async () => {
       try {
-        console.log('Initializing fhEVM...');
+        console.log('Initializing fhEVM with Zama Relayer SDK...');
 
-        // Dynamic import of fhevmjs
-        const fhevm = await import('fhevmjs');
+        // Dynamic import of @zama-fhe/relayer-sdk/web for browser
+        const { createInstance, SepoliaConfig } = await import('@zama-fhe/relayer-sdk/web');
 
         if (!window.ethereum) {
           throw new Error('No ethereum provider found. Please install MetaMask.');
         }
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const network = await provider.getNetwork();
+        console.log('Using SepoliaConfig:', SepoliaConfig);
 
-        if (Number(network.chainId) !== SEPOLIA_CHAIN_ID) {
-          console.warn('Not on Sepolia network. Please switch to Sepolia.');
-        }
-
-        // Initialize fhEVM
-        await fhevm.initFhevm();
-
-        // Create instance for Sepolia
-        const instance = await fhevm.createInstance({
-          chainId: SEPOLIA_CHAIN_ID,
-          networkUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
-        });
+        // Create instance with Sepolia configuration
+        const instance = await createInstance(SepoliaConfig);
 
         globalFhevmInstance = instance;
-        console.log('fhEVM initialized successfully!');
+        console.log('fhEVM initialized successfully with Zama Relayer SDK!');
         return instance;
       } catch (error: any) {
         console.error('Failed to initialize fhEVM:', error);
@@ -104,6 +89,8 @@ export function useFhevm() {
 
       try {
         console.log('Encrypting amount:', amount.toString());
+        console.log('Contract:', contractAddress);
+        console.log('User:', userAddress);
 
         // Create encrypted input
         const input = instance.createEncryptedInput(contractAddress, userAddress);
