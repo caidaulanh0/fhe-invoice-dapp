@@ -27,6 +27,15 @@ declare module '@zama-fhe/relayer-sdk/web' {
     gatewayChainId: number;
   }
 
+  export interface FhevmInstance {
+    createEncryptedInput(contractAddress: string, userAddress: string): {
+      add64(value: bigint): void;
+      encrypt(): Promise<{ handles: string[]; inputProof: string }>;
+    };
+    publicDecrypt(handles: string[]): Promise<bigint[]>;
+  }
+
   export const SepoliaConfig: SepoliaConfigType;
-  export function createInstance(config: SepoliaConfigType): Promise<any>;
+  export function initSDK(): Promise<void>;
+  export function createInstance(config: SepoliaConfigType): Promise<FhevmInstance>;
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useWallet } from './hooks/useWallet';
 import { useFhevm } from './hooks/useFhevm';
@@ -13,13 +13,7 @@ type Tab = 'dashboard' | 'create' | 'sent' | 'received';
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const { account, chainId, connect, disconnect, isConnecting } = useWallet();
-  const { isInitialized, initialize } = useFhevm();
-
-  useEffect(() => {
-    if (account && !isInitialized) {
-      initialize();
-    }
-  }, [account, isInitialized, initialize]);
+  useFhevm(); // Auto-initializes FHE SDK on mount
 
   if (!account) {
     return (

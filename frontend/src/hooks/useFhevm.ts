@@ -1,96 +1,74 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { initSDK, createInstance, SepoliaConfig, FhevmInstance } from '@zama-fhe/relayer-sdk/web';
 
 // Contract configuration
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
 
 // Global instance to avoid re-initialization
-let globalFhevmInstance: any = null;
-let initPromise: Promise<any> | null = null;
+let fhevmInstance: FhevmInstance | null = null;
+let initPromise: Promise<FhevmInstance> | null = null;
 
 export function useFhevm() {
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [fhevmInstance, setFhevmInstance] = useState<any>(null);
+  const [instance, setInstance] = useState<FhevmInstance | null>(fhevmInstance);
+  const [isInitialized, setIsInitialized] = useState(!!fhevmInstance);
   const [initError, setInitError] = useState<string | null>(null);
 
-  const initialize = useCallback(async () => {
-    // If already initialized globally, use that
-    if (globalFhevmInstance) {
-      setFhevmInstance(globalFhevmInstance);
-      setIsInitialized(true);
-      return globalFhevmInstance;
-    }
-
-    // If initialization is in progress, wait for it
-    if (initPromise) {
-      const instance = await initPromise;
-      setFhevmInstance(instance);
-      setIsInitialized(true);
-      return instance;
-    }
-
-    // Start initialization
-    initPromise = (async () => {
-      try {
-        console.log('Initializing fhEVM with Zama Relayer SDK...');
-
-        // Dynamic import of @zama-fhe/relayer-sdk/web for browser
-        const { createInstance, SepoliaConfig } = await import('@zama-fhe/relayer-sdk/web');
-
-        if (!window.ethereum) {
-          throw new Error('No ethereum provider found. Please install MetaMask.');
-        }
-
-        console.log('Using SepoliaConfig:', SepoliaConfig);
-
-        // Create instance with Sepolia configuration
-        const instance = await createInstance(SepoliaConfig);
-
-        globalFhevmInstance = instance;
-        console.log('fhEVM initialized successfully with Zama Relayer SDK!');
-        return instance;
-      } catch (error: any) {
-        console.error('Failed to initialize fhEVM:', error);
-        initPromise = null; // Allow retry
-        throw error;
-      }
-    })();
-
-    try {
-      const instance = await initPromise;
-      setFhevmInstance(instance);
-      setIsInitialized(true);
-      setInitError(null);
-      return instance;
-    } catch (error: any) {
-      setInitError(error.message);
-      throw error;
-    }
-  }, []);
-
-  // Auto-initialize on mount
   useEffect(() => {
-    initialize().catch((err) => {
-      console.error('Auto-init failed:', err);
-    });
-  }, [initialize]);
+    const init = async () => {
+      if (fhevmInstance) {
+        setInstance(fhevmInstance);
+        setIsInitialized(true);
+        return;
+      }
+
+      if (initPromise) {
+        try {
+          const inst = await initPromise;
+          setInstance(inst);
+          setIsInitialized(true);
+        } catch (err: any) {
+          setInitError(err.message || 'Failed to initialize FHEVM SDK');
+          console.error('Init promise failed:', err);
+        }
+        return;
+      }
+
+      try {
+        console.log('Initializing FHEVM SDK...');
+
+        initPromise = (async () => {
+          // Initialize the SDK (WASM modules) - THIS IS REQUIRED!
+          await initSDK();
+          console.log('SDK initialized, creating instance...');
+
+          // Create instance with Sepolia config
+          const inst = await createInstance(SepoliaConfig);
+          fhevmInstance = inst;
+          console.log('FHEVM instance created successfully!');
+          return inst;
+        })();
+
+        const inst = await initPromise;
+        setInstance(inst);
+        setIsInitialized(true);
+      } catch (err: any) {
+        setInitError(err.message || 'Failed to initialize FHEVM SDK');
+        console.error('FHEVM init failed:', err);
+        initPromise = null; // Allow retry
+      }
+    };
+
+    init();
+  }, []);
 
   const encryptAmount = useCallback(
     async (amount: bigint, contractAddress: string, userAddress: string) => {
-      // Ensure we have an instance
-      let instance = fhevmInstance;
       if (!instance) {
-        console.log('FHE not ready, initializing...');
-        instance = await initialize();
-      }
-
-      if (!instance) {
-        throw new Error('FHE encryption not available. Please refresh the page.');
+        throw new Error('FHEVM SDK not initialized. Please wait...');
       }
 
       try {
         console.log('Encrypting amount:', amount.toString());
-        console.log('Contract:', contractAddress);
-        console.log('User:', userAddress);
 
         // Create encrypted input
         const input = instance.createEncryptedInput(contractAddress, userAddress);
@@ -111,36 +89,30 @@ export function useFhevm() {
         throw error;
       }
     },
-    [fhevmInstance, initialize]
+    [instance]
   );
 
   const decryptAmount = useCallback(
     async (encryptedHandle: string, _contractAddress: string) => {
-      let instance = fhevmInstance;
       if (!instance) {
-        instance = await initialize();
-      }
-
-      if (!instance) {
-        throw new Error('FHE decryption not available');
+        throw new Error('FHEVM SDK not initialized');
       }
 
       try {
-        const decrypted = await instance.decrypt(encryptedHandle);
-        return decrypted;
+        const decrypted = await instance.publicDecrypt([encryptedHandle]);
+        return decrypted[0];
       } catch (error) {
         console.error('Decryption failed:', error);
         throw error;
       }
     },
-    [fhevmInstance, initialize]
+    [instance]
   );
 
   return {
     isInitialized,
-    fhevmInstance,
+    fhevmInstance: instance,
     initError,
-    initialize,
     encryptAmount,
     decryptAmount,
   };
