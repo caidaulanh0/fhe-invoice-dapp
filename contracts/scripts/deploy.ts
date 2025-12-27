@@ -6,14 +6,14 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", (await ethers.provider.getBalance(deployer.address)).toString());
 
-  const InvoiceManager = await ethers.getContractFactory("InvoiceManager");
-  console.log("Deploying InvoiceManager...");
+  const ConfidentialInvoice = await ethers.getContractFactory("ConfidentialInvoice");
+  console.log("Deploying ConfidentialInvoice...");
 
-  const invoiceManager = await InvoiceManager.deploy();
-  await invoiceManager.waitForDeployment();
+  const confidentialInvoice = await ConfidentialInvoice.deploy();
+  await confidentialInvoice.waitForDeployment();
 
-  const address = await invoiceManager.getAddress();
-  console.log("InvoiceManager deployed to:", address);
+  const address = await confidentialInvoice.getAddress();
+  console.log("ConfidentialInvoice deployed to:", address);
 
   return address;
 }

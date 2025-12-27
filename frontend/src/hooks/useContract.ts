@@ -3,19 +3,24 @@ import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { CONTRACT_ADDRESS } from './useFhevm';
 
-// InvoiceManager ABI
-const INVOICE_MANAGER_ABI = [
-  'function createInvoice(address _recipient, bytes32 _encryptedAmount, bytes calldata _inputProof, string calldata _description) external returns (uint256)',
-  'function payInvoice(uint256 _invoiceId) external',
-  'function cancelInvoice(uint256 _invoiceId) external',
-  'function getInvoice(uint256 _invoiceId) external view returns (uint256 id, address sender, address recipient, string memory description, uint8 status, uint256 createdAt, uint256 updatedAt)',
-  'function getEncryptedAmount(uint256 _invoiceId) external view returns (bytes32)',
-  'function getSentInvoices(address _sender) external view returns (uint256[])',
-  'function getReceivedInvoices(address _recipient) external view returns (uint256[])',
+// ConfidentialInvoice ABI - using proper FHE with externalEuint64
+const CONFIDENTIAL_INVOICE_ABI = [
+  'function depositBalance(bytes32 encryptedAmount, bytes calldata inputProof) external',
+  'function createInvoice(address recipient, bytes32 encryptedAmount, bytes calldata inputProof, string calldata description, uint256 dueDate) external returns (uint256)',
+  'function payInvoice(uint256 invoiceId) external',
+  'function cancelInvoice(uint256 invoiceId) external',
+  'function disputeInvoice(uint256 invoiceId) external',
+  'function getInvoice(uint256 invoiceId) external view returns (uint256 id, address sender, address recipient, string memory description, uint8 status, uint256 createdAt, uint256 dueDate)',
+  'function getEncryptedBalance(address user) external view returns (bytes32)',
+  'function getEncryptedAmount(uint256 invoiceId) external view returns (bytes32)',
+  'function getSentInvoices(address user) external view returns (uint256[])',
+  'function getReceivedInvoices(address user) external view returns (uint256[])',
   'function getInvoiceCount() external view returns (uint256)',
-  'event InvoiceCreated(uint256 indexed invoiceId, address indexed sender, address indexed recipient, string description, uint256 timestamp)',
-  'event InvoicePaid(uint256 indexed invoiceId, address indexed payer, uint256 timestamp)',
-  'event InvoiceCancelled(uint256 indexed invoiceId, address indexed canceller, uint256 timestamp)',
+  'event InvoiceCreated(uint256 indexed invoiceId, address indexed sender, address indexed recipient, string description, uint256 dueDate)',
+  'event InvoicePaid(uint256 indexed invoiceId, address indexed payer)',
+  'event InvoiceCancelled(uint256 indexed invoiceId)',
+  'event InvoiceDisputed(uint256 indexed invoiceId)',
+  'event BalanceDeposited(address indexed user)',
 ];
 
 export interface Invoice {
@@ -25,7 +30,7 @@ export interface Invoice {
   description: string;
   status: number;
   createdAt: bigint;
-  updatedAt: bigint;
+  dueDate: bigint;
   encryptedAmount?: string;
   decryptedAmount?: bigint;
 }
@@ -43,7 +48,7 @@ export function useContract() {
         const signer = await provider.getSigner();
         const invoiceContract = new ethers.Contract(
           CONTRACT_ADDRESS,
-          INVOICE_MANAGER_ABI,
+          CONFIDENTIAL_INVOICE_ABI,
           signer
         );
         setContract(invoiceContract);
@@ -55,12 +60,38 @@ export function useContract() {
     initContract();
   }, []);
 
+  const depositBalance = useCallback(
+    async (encryptedAmount: string, inputProof: string) => {
+      if (!contract) {
+        toast.error('Contract not initialized');
+        return false;
+      }
+
+      setIsLoading(true);
+      try {
+        const tx = await contract.depositBalance(encryptedAmount, inputProof);
+        toast.loading('Depositing balance...', { id: 'deposit' });
+        await tx.wait();
+        toast.success('Balance deposited!', { id: 'deposit' });
+        return true;
+      } catch (error: any) {
+        console.error('Deposit error:', error);
+        toast.error(error.reason || 'Failed to deposit', { id: 'deposit' });
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [contract]
+  );
+
   const createInvoice = useCallback(
     async (
       recipient: string,
       encryptedAmount: string,
       inputProof: string,
-      description: string
+      description: string,
+      dueDate?: number
     ) => {
       if (!contract) {
         toast.error('Contract not initialized');
@@ -69,15 +100,19 @@ export function useContract() {
 
       setIsLoading(true);
       try {
+        // Default due date to 30 days from now if not provided
+        const dueDateTimestamp = dueDate || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+
         const tx = await contract.createInvoice(
           recipient,
           encryptedAmount,
           inputProof,
-          description
+          description,
+          dueDateTimestamp
         );
-        toast.loading('Creating invoice...', { id: 'create-invoice' });
+        toast.loading('Creating encrypted invoice...', { id: 'create-invoice' });
         const receipt = await tx.wait();
-        toast.success('Invoice created!', { id: 'create-invoice' });
+        toast.success('Invoice created with FHE encryption!', { id: 'create-invoice' });
 
         // Parse invoice ID from event
         const event = receipt.logs.find(
@@ -105,9 +140,9 @@ export function useContract() {
       setIsLoading(true);
       try {
         const tx = await contract.payInvoice(invoiceId);
-        toast.loading('Processing payment...', { id: 'pay-invoice' });
+        toast.loading('Processing encrypted payment...', { id: 'pay-invoice' });
         await tx.wait();
-        toast.success('Invoice paid!', { id: 'pay-invoice' });
+        toast.success('Invoice paid using FHE!', { id: 'pay-invoice' });
         return true;
       } catch (error: any) {
         console.error('Pay invoice error:', error);
@@ -145,6 +180,31 @@ export function useContract() {
     [contract]
   );
 
+  const disputeInvoice = useCallback(
+    async (invoiceId: bigint) => {
+      if (!contract) {
+        toast.error('Contract not initialized');
+        return false;
+      }
+
+      setIsLoading(true);
+      try {
+        const tx = await contract.disputeInvoice(invoiceId);
+        toast.loading('Disputing invoice...', { id: 'dispute-invoice' });
+        await tx.wait();
+        toast.success('Invoice disputed!', { id: 'dispute-invoice' });
+        return true;
+      } catch (error: any) {
+        console.error('Dispute invoice error:', error);
+        toast.error(error.reason || 'Failed to dispute invoice', { id: 'dispute-invoice' });
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [contract]
+  );
+
   const getInvoice = useCallback(
     async (invoiceId: bigint): Promise<Invoice | null> => {
       if (!contract) return null;
@@ -158,7 +218,7 @@ export function useContract() {
           description: result.description,
           status: result.status,
           createdAt: result.createdAt,
-          updatedAt: result.updatedAt,
+          dueDate: result.dueDate,
         };
       } catch (error) {
         console.error('Get invoice error:', error);
@@ -210,9 +270,11 @@ export function useContract() {
   return {
     contract,
     isLoading,
+    depositBalance,
     createInvoice,
     payInvoice,
     cancelInvoice,
+    disputeInvoice,
     getInvoice,
     getSentInvoices,
     getReceivedInvoices,

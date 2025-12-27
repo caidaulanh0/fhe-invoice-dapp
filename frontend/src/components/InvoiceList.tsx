@@ -9,7 +9,7 @@ interface InvoiceListProps {
 }
 
 const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
-  const { getSentInvoices, getReceivedInvoices, getInvoice, payInvoice, cancelInvoice, isLoading } =
+  const { getSentInvoices, getReceivedInvoices, getInvoice, payInvoice, cancelInvoice, disputeInvoice, isLoading } =
     useContract();
   const { decryptAmount, isInitialized } = useFhevm();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -102,6 +102,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
         return <span className="status-paid">Paid</span>;
       case 2:
         return <span className="status-cancelled">Cancelled</span>;
+      case 3:
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Disputed</span>;
       default:
         return null;
     }
@@ -244,21 +246,30 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ account, type }) => {
                   <p className="text-gray-900">{formatDate(invoice.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Updated</p>
-                  <p className="text-gray-900">{formatDate(invoice.updatedAt)}</p>
+                  <p className="text-gray-500">Due Date</p>
+                  <p className="text-gray-900">{formatDate(invoice.dueDate)}</p>
                 </div>
               </div>
 
               {invoice.status === 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end space-x-3">
                   {type === 'received' && (
-                    <button
-                      onClick={() => handlePay(invoice.id)}
-                      disabled={isLoading}
-                      className="btn-primary py-2 px-4 text-sm"
-                    >
-                      Mark as Paid
-                    </button>
+                    <>
+                      <button
+                        onClick={() => disputeInvoice(invoice.id).then(() => loadInvoices())}
+                        disabled={isLoading}
+                        className="bg-orange-100 text-orange-700 font-semibold py-2 px-4 rounded-lg text-sm hover:bg-orange-200 transition-colors"
+                      >
+                        Dispute
+                      </button>
+                      <button
+                        onClick={() => handlePay(invoice.id)}
+                        disabled={isLoading}
+                        className="btn-primary py-2 px-4 text-sm"
+                      >
+                        Pay Invoice
+                      </button>
+                    </>
                   )}
                   {type === 'sent' && (
                     <button
