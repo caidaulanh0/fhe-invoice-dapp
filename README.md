@@ -9,7 +9,7 @@
 
 **Privacy-Preserving Invoice Management on Blockchain**
 
-[Live Demo](https://fhe-invoice.vercel.app) • [Smart Contract](https://sepolia.etherscan.io/address/0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E#code) • [Documentation](#quick-start)
+[Live Demo](https://frontend-indol-delta-10.vercel.app) • [Smart Contract](https://sepolia.etherscan.io/address/0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E#code) • [Documentation](#quick-start)
 
 </div>
 
@@ -19,7 +19,7 @@
 
 | Resource | Link |
 |:---------|:-----|
-| 🚀 **Live Demo** | [fhe-invoice.vercel.app](https://fhe-invoice.vercel.app) |
+| 🚀 **Live Demo** | [frontend-indol-delta-10.vercel.app](https://frontend-indol-delta-10.vercel.app) |
 | 📄 **Smart Contract** | [`0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E`](https://sepolia.etherscan.io/address/0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E#code) |
 | 🔗 **Network** | Sepolia Testnet |
 | ✅ **Verified** | [View on Etherscan](https://sepolia.etherscan.io/address/0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E#code) |
