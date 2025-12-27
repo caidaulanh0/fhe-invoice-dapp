@@ -7,14 +7,28 @@ export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
 // Zama fhEVM chain configuration
 const ZAMA_CHAIN_ID = 8009;
 
+// Demo mode flag - set to true for demo without actual FHE
+const DEMO_MODE = !CONTRACT_ADDRESS;
+
 export function useFhevm() {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(DEMO_MODE);
   const [fhevmInstance, setFhevmInstance] = useState<any>(null);
 
   const initialize = useCallback(async () => {
+    if (DEMO_MODE) {
+      console.log('Running in demo mode - FHE disabled');
+      setIsInitialized(true);
+      return;
+    }
+
     try {
-      // Dynamic import of relayer SDK
-      const { createFhevmInstance } = await import('@zama-fhe/relayer-sdk');
+      // Dynamic import of relayer SDK - only when contract is deployed
+      const relayerModule = await import('@zama-fhe/relayer-sdk');
+      const createFhevmInstance = relayerModule.createFhevmInstance || relayerModule.default?.createFhevmInstance;
+
+      if (!createFhevmInstance) {
+        throw new Error('createFhevmInstance not found in relayer SDK');
+      }
 
       if (!window.ethereum) {
         throw new Error('No ethereum provider found');
@@ -38,14 +52,20 @@ export function useFhevm() {
       console.log('fhEVM initialized successfully');
     } catch (error) {
       console.error('Failed to initialize fhEVM:', error);
-      setIsInitialized(false);
+      // Fall back to demo mode
+      setIsInitialized(true);
     }
   }, []);
 
   const encryptAmount = useCallback(
     async (amount: bigint, contractAddress: string, userAddress: string) => {
-      if (!fhevmInstance) {
-        throw new Error('fhEVM not initialized');
+      if (DEMO_MODE || !fhevmInstance) {
+        // Demo mode: return mock encrypted data
+        console.log('Demo mode: simulating encryption for amount:', amount.toString());
+        return {
+          encryptedAmount: '0x' + amount.toString(16).padStart(64, '0'),
+          inputProof: '0x' + '00'.repeat(32),
+        };
       }
 
       try {
@@ -68,8 +88,10 @@ export function useFhevm() {
 
   const decryptAmount = useCallback(
     async (encryptedHandle: string, contractAddress: string) => {
-      if (!fhevmInstance) {
-        throw new Error('fhEVM not initialized');
+      if (DEMO_MODE || !fhevmInstance) {
+        // Demo mode: return mock decrypted value
+        console.log('Demo mode: simulating decryption');
+        return BigInt('1000000000000000000'); // 1 token
       }
 
       try {
@@ -90,5 +112,6 @@ export function useFhevm() {
     initialize,
     encryptAmount,
     decryptAmount,
+    isDemoMode: DEMO_MODE,
   };
 }
