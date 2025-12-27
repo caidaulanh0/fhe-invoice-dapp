@@ -218,6 +218,10 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ account }) => {
             Initializing FHE encryption... Please wait.
           </p>
         )}
+
+        <p className="text-center text-xs text-gray-500 mt-2">
+          Demo Mode: Running on Sepolia testnet with simulated FHE encryption
+        </p>
       </form>
     </div>
   );

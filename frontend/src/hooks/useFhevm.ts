@@ -7,8 +7,8 @@ export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
 // Sepolia chain configuration for fhEVM
 const SEPOLIA_CHAIN_ID = 11155111;
 
-// Demo mode flag - set to true for demo without actual FHE
-const DEMO_MODE = !CONTRACT_ADDRESS;
+// Demo mode flag - always true on Sepolia (FHE only works on Zama network)
+const DEMO_MODE = true;
 
 export function useFhevm() {
   const [isInitialized, setIsInitialized] = useState(DEMO_MODE);
