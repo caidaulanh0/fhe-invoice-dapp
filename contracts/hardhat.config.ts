@@ -6,8 +6,8 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const MNEMONIC = process.env.MNEMONIC || "test test test test test test test test test test test junk";
-const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
+const INFURA_API_KEY = process.env.INFURA_API_KEY || "4457c4ce0594464582fc7c8dfbc5d395";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 
 const config: HardhatUserConfig = {
@@ -29,22 +29,16 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
     },
-    // Zama Ethereum Mainnet/Testnet Configuration
+    // Zama Ethereum (if needed in future)
     zama: {
       url: "https://ethnode1.zama.fhe.io",
       chainId: 8009,
-      accounts: {
-        mnemonic: MNEMONIC,
-        count: 10,
-      },
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
     },
     sepolia: {
-      url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
+      url: "https://ethereum-sepolia-rpc.publicnode.com",
       chainId: 11155111,
-      accounts: {
-        mnemonic: MNEMONIC,
-        count: 10,
-      },
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
     },
   },
   namedAccounts: {
