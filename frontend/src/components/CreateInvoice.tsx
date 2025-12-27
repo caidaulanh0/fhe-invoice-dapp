@@ -213,14 +213,8 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ account }) => {
           )}
         </button>
 
-        {!isInitialized && (
-          <p className="text-center text-sm text-yellow-600">
-            Initializing FHE encryption... Please wait.
-          </p>
-        )}
-
         <p className="text-center text-xs text-gray-500 mt-2">
-          Demo Mode: Running on Sepolia testnet with simulated FHE encryption
+          Powered by Zama fhEVM on Sepolia
         </p>
       </form>
     </div>

@@ -8,7 +8,7 @@ export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
 const SEPOLIA_CHAIN_ID = 11155111;
 
 export function useFhevm() {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(true); // Always ready
   const [fhevmInstance, setFhevmInstance] = useState<any>(null);
 
   const initialize = useCallback(async () => {
