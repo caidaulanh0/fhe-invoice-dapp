@@ -1,0 +1,24 @@
+{
+  "name": "fhe-invoice-dapp",
+  "version": "1.0.0",
+  "description": "Encrypted Invoice Management dApp using Zama fhEVM",
+  "scripts": {
+    "install:all": "cd contracts && npm install && cd ../frontend && npm install",
+    "compile": "cd contracts && npm run compile",
+    "test": "cd contracts && npm test",
+    "deploy:zama": "cd contracts && npm run deploy:zama",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "fhe",
+    "fhevm",
+    "zama",
+    "blockchain",
+    "encryption",
+    "invoice",
+    "ethereum"
+  ],
+  "author": "",
+  "license": "MIT"
+}
