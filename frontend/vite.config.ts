@@ -18,16 +18,5 @@ export default defineConfig({
         global: 'globalThis',
       },
     },
-    exclude: ['@zama-fhe/relayer-sdk'],
-  },
-  build: {
-    rollupOptions: {
-      external: ['@zama-fhe/relayer-sdk'],
-      output: {
-        globals: {
-          '@zama-fhe/relayer-sdk': 'ZamaRelayerSDK',
-        },
-      },
-    },
   },
 })

@@ -9,6 +9,7 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-declare module '@zama-fhe/relayer-sdk' {
-  export function createFhevmInstance(config: { chainId: number }): Promise<any>;
+declare module 'fhevmjs' {
+  export function initFhevm(): Promise<void>;
+  export function createInstance(config: { chainId: number; networkUrl?: string }): Promise<any>;
 }
