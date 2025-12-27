@@ -11,6 +11,10 @@
 
 [Live Demo](https://zama-invoice.vercel.app) • [Smart Contract](https://sepolia.etherscan.io/address/0x6Cc3529D0Cc87c9b313f3b0B9250d9dbc0e8316E#code) • [Documentation](#quick-start)
 
+[![Demo Video](https://img.youtube.com/vi/2_SNkv1jUYk/maxresdefault.jpg)](https://youtu.be/2_SNkv1jUYk)
+
+▶️ **[Watch Demo Video](https://youtu.be/2_SNkv1jUYk)**
+
 </div>
 
 ---
